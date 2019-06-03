@@ -1,0 +1,16 @@
+---
+resources:
+- name: tasks-hello-world
+  type: git
+  source:
+    uri: https://github.com/bernardpark/pcf-concourse-tasks.git
+    branch: master
+
+jobs:
+- name: job-hello-world
+  public: true
+  plan:
+  - get: tasks-hello-world 
+  - task: task-hello-world
+    file: tasks-hello-world/tasks/task-hello-world.yml
+
