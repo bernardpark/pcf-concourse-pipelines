@@ -1,16 +1,95 @@
 ---
+# Job Groups
+
+# Resource Types
+resource_types:
+- name: pivnet
+  type: docker-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tag: latest-final
+
+# Resources
 resources:
-- name: tasks-hello-world
+- name: platform-automation-tasks-s3
+  type: s3
+  source:
+    access_key_id: ((aws.access_key_id))
+    secret_access_key: ((aws.secret_access_key))
+    region_name: ((aws.s3.region))
+    bucket: ((aws.s3.platform_automation_bucket))
+    regexp: platform-automation-tasks-(.*).zip
+    endpoint: ((aws.s3.endpoint))
+
+- name: platform-automation-image-s3
+  type: s3
+  source:
+    access_key_id: ((aws.access_key_id))
+    secret_access_key: ((aws.secret_access_key))
+    region_name: ((aws.s3.region))
+    bucket: ((aws.s3.platform_automation_bucket))
+    regexp: platform-automation-image-(.*).tgz
+    endpoint: ((aws.s3.endpoint))
+
+- name: terraform-aws
   type: git
   source:
-    uri: https://github.com/bernardpark/pcf-concourse-tasks.git
+    uri: https://github.com/pivotal-cf/terraforming-aws.git
     branch: master
 
-jobs:
-- name: job-hello-world
-  public: true
-  plan:
-  - get: tasks-hello-world 
-  - task: task-hello-world
-    file: tasks-hello-world/tasks/task-hello-world.yml
+- name: om-image
+  type: pivnet
+  source:
+    api_token: ((pivnet.token))
+    product_slug: ((pivnet.opsman.product_slug))
+    product_version: ((pivnet.opsman.product_version))
+    sort_by: semver
 
+- name: pas-tile
+  type: pivnet
+  source:
+    api_token: ((pivnet.token))
+    product_slug: ((pivnet.pas.product_slug))
+    product_version: ((pivnet.pas.product_version))
+    sort_by: semver
+
+- name: pas-stemcell
+  type: pivnet
+  source:
+    api_token: ((pivnet.token))
+    product_slug: ((pivnet.pas.stemcell.product_slug))
+    product_version: ((pivnet.pas.stemcell.product_version))
+    sort_by: semver
+
+# Jobs
+jobs:
+- name: test-resources
+  plan:
+  - aggregate:
+    - get: platform-automation-tasks-s3
+      params:
+        unpack: true
+    - get: platform-automation-image-s3
+      params:
+        unpack: true
+  - task: test-resources
+    image: platform-automation-image-s3
+    file: platform-automation-tasks-s3/tasks/test.yml
+- name: test-resources-2
+  plan:
+  - get: terraform-aws
+  - get: platform-automation-tasks-s3
+    passed: [test-resources]
+    trigger: true
+  - get: om-image
+  - get: pas-tile
+  - get: pas-stemcell
+  - task: echo-task
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: busybox}
+      run:
+        path: echo
+        args: [hi]

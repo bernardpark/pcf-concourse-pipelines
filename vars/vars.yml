@@ -1,2 +1,34 @@
 ---
-message: hello world
+# Foundation
+env:
+  name: prod
+foundation: bparkpcf
+bosh_cli_url: https://github.com/cloudfoundry/bosh-cli/releases/download/v5.4.0/bosh-cli-5.4.0-linux-amd64
+om_cli_url: https://github.com/pivotal-cf/om/releases/download/0.55.0/om-linux
+
+# PivNet
+pivnet:
+  token: ((pivnet.token))
+  opsman:
+    product_slug: ops-manager
+    product_version: 2.5.6
+    product_globs: "*aws*.yml"
+  pas:
+    product_slug: elastic-runtime
+    product_version: 2.5.4
+    product_globs: cf-2.5.4*.pivotal
+    stemcell:
+      product_slug: stemcells-ubuntu-xenial
+      product_version: "250.58"
+      product_globs: light-bosh-stemcell-*-aws-*.tgz
+
+# AWS
+aws: 
+  access_key_id: ((aws.access_key_id))
+  secret_access_key: ((aws.secret_access_key))
+  s3:
+    region: us-east-2
+    endpoint: https://s3.us-east-2.amazonaws.com
+    platform_automation_bucket: pcfbpark-platform-automation
+    platform_automation_version: 3.0.1
+
